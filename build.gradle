@@ -1,0 +1,91 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.4'
+	id 'io.spring.dependency-management' version '1.1.4'
+	id "org.liquibase.gradle" version "2.2.1"
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
+	implementation group: 'org.liquibase', name: 'liquibase-core', version: '4.27.0'
+	liquibaseRuntime 'org.liquibase.ext:liquibase-hibernate6:4.27.0'
+	liquibaseRuntime sourceSets.main.runtimeClasspath
+	liquibaseRuntime sourceSets.main.output
+	liquibaseRuntime 'info.picocli:picocli:4.7.5'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+}
+
+def props = new Properties()
+file("src/main/resources/liquibase.properties").withInputStream { props.load(it) }
+
+def appProps = new Properties()
+file("src/main/resources/application.properties").withInputStream { appProps.load(it) }
+
+
+liquibase {
+	activities {
+		main {
+			changeLogFile props.getProperty("liquibase.changelog.main")
+			referenceUrl props.getProperty("liquibase.changelog.referenceUrl")
+			url appProps.getProperty("spring.datasource.url")
+			username appProps.getProperty("spring.datasource.username")
+			password appProps.getProperty("spring.datasource.password")
+			driver "org.postgresql.Driver"
+			referenceDriver "liquibase.ext.hibernate.database.connection.HibernateDriver"
+
+		}
+	}
+}
+
+task generateChangelogMaster {
+	doLast {
+		def changelogDir = file(props.getProperty("changelog.directory")) // Change this to your changelog directory
+		def changelogMasterFileName = props.getProperty("changelog.master.file.name")
+
+        def changelogSourceRoot = props.getProperty("changelog.source.root.path")
+		// Get a list of changelog files in the directory
+		def changelogFiles = changelogDir.listFiles().findAll { it.isFile() && it.name.endsWith('.yaml') && it.name != changelogMasterFileName}
+
+		// Generate the content for db.changelog-master.yaml
+		def content = "databaseChangeLog:\n"
+		changelogFiles.each { file ->
+			def relativePath = changelogSourceRoot.toString() + changelogDir.toPath().relativize(file.toPath()).toString()
+			content += "  - include:\n"
+			content += "      file: ${relativePath}\n"
+		}
+
+		// Write content to db.changelog-master.yaml
+		def outputFile = "${changelogDir}/${changelogMasterFileName}"
+		file(outputFile).text = content
+	}
+}
+
+
+tasks.build.dependsOn diffChangelog
+tasks.build.dependsOn generateChangelogMaster
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
