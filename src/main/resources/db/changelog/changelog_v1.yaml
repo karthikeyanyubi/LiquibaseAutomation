@@ -1,0 +1,64 @@
+databaseChangeLog:
+- changeSet:
+    id: 1712734506302-1
+    author: karthikeyan.seethapathy (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: employeePK
+            name: employee_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_date
+            type: TIMESTAMP(6) WITHOUT TIME ZONE
+        - column:
+            name: current_status
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: employee_designation
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: employee_name
+            type: VARCHAR(255)
+        - column:
+            defaultValueBoolean: true
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: phone_number
+            type: VARCHAR(10)
+        tableName: employee
+- changeSet:
+    id: 1712734506302-2
+    author: karthikeyan.seethapathy (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: employee_name, phone_number
+        constraintName: UKjjjap0o9f59mahtuie4da8ady
+        tableName: employee
+
+databaseChangeLog:
+- changeSet:
+    id: 1712734607201-1
+    author: karthikeyan.seethapathy (generated)
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            name: rating
+            type: integer
+        tableName: employee
+
